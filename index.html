@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>My Properties</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════
+       PASSWORD SCREEN — shown before anything else
+  ════════════════════════════════════════════ -->
+  <div id="lock-screen" class="lock-screen">
+    <div class="lock-card">
+      <div class="lock-icon">🏡</div>
+      <h1 class="lock-title">My Properties</h1>
+      <p class="lock-subtitle">Enter your PIN to continue</p>
+
+      <!-- 4 digit boxes -->
+      <div class="pin-boxes" id="pin-boxes">
+        <div class="pin-box" id="pin-box-0"></div>
+        <div class="pin-box" id="pin-box-1"></div>
+        <div class="pin-box" id="pin-box-2"></div>
+        <div class="pin-box" id="pin-box-3"></div>
+      </div>
+
+      <p class="pin-error hidden" id="pin-error">Incorrect PIN. Try again.</p>
+
+      <!-- Number pad -->
+      <div class="numpad">
+        <button class="numpad-btn" data-digit="1">1</button>
+        <button class="numpad-btn" data-digit="2">2</button>
+        <button class="numpad-btn" data-digit="3">3</button>
+        <button class="numpad-btn" data-digit="4">4</button>
+        <button class="numpad-btn" data-digit="5">5</button>
+        <button class="numpad-btn" data-digit="6">6</button>
+        <button class="numpad-btn" data-digit="7">7</button>
+        <button class="numpad-btn" data-digit="8">8</button>
+        <button class="numpad-btn" data-digit="9">9</button>
+        <button class="numpad-btn numpad-clear" id="numpad-clear">⌫</button>
+        <button class="numpad-btn" data-digit="0">0</button>
+        <div></div><!-- spacer -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- Full-screen image preview modal -->
+  <div id="image-modal" class="image-modal hidden">
+    <div class="image-modal-backdrop"></div>
+    <div class="image-modal-content">
+      <button class="image-modal-close" id="close-image-modal">✕</button>
+      <img id="modal-image-src" src="" alt="Property image" />
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW 1: HOME — Property List
+  ════════════════════════════════════════════ -->
+  <div id="view-home" class="view active">
+
+    <header class="header">
+      <div class="header-inner">
+        <div class="header-title-group">
+          <span class="header-eyebrow">Portfolio</span>
+          <h1 class="header-title">My Properties</h1>
+        </div>
+        <div class="header-meta">
+          <span id="property-count" class="property-count">0 listings</span>
+        </div>
+      </div>
+
+      <!-- Currency switcher -->
+      <div class="currency-bar">
+        <span class="currency-label">Currency</span>
+        <div class="currency-pills">
+          <button class="currency-pill active" data-currency="XCG">XCG</button>
+          <button class="currency-pill" data-currency="USD">USD</button>
+          <button class="currency-pill" data-currency="EUR">EUR</button>
+        </div>
+      </div>
+
+      <!-- Toolbar: search + filter + sort -->
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search by name or location…" autocomplete="off" />
+          <button class="search-clear hidden" id="search-clear">✕</button>
+        </div>
+        <div class="toolbar-controls">
+          <select id="filter-status" class="control-select">
+            <option value="all">All</option>
+            <option value="available">Available</option>
+            <option value="sold">Sold</option>
+          </select>
+          <select id="sort-select" class="control-select">
+            <option value="none">Sort</option>
+            <option value="name-asc">Name A–Z</option>
+            <option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option>
+            <option value="area-asc">Area ↑</option>
+            <option value="area-desc">Area ↓</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- Action buttons row -->
+    <div class="action-bar">
+      <button class="btn btn-primary" id="btn-add-property">+ Add Property</button>
+      <div class="action-bar-right">
+        <button class="btn btn-ghost" id="btn-gallery-view">🖼 Gallery</button>
+        <button class="btn btn-ghost" id="btn-export-csv">↓ CSV</button>
+      </div>
+    </div>
+
+    <!-- Properties table (scrollable) -->
+    <main class="table-wrap" id="table-wrap">
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">🏡</div>
+        <p class="empty-title">No properties yet</p>
+        <p class="empty-sub">Tap the button above to add your first property.</p>
+      </div>
+
+      <table class="property-table" id="property-table">
+        <thead>
+          <tr>
+            <th>Name / Location</th>
+            <th>Price</th>
+            <th>Area m²</th>
+            <th>Nearby</th>
+            <th>Land</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="property-tbody"></tbody>
+      </table>
+    </main>
+
+  </div><!-- /view-home -->
+
+
+  <!-- ════════════════════════════════════════════
+       VIEW 2: DETAIL — Single Property
+  ════════════════════════════════════════════ -->
+  <div id="view-detail" class="view hidden">
+
+    <header class="detail-header">
+      <button class="back-btn" id="back-btn">← Back</button>
+      <div class="detail-header-actions">
+        <button class="btn btn-ghost btn-sm" id="detail-print-btn">🖨 Print</button>
+        <button class="btn btn-sold-toggle" id="detail-sold-btn">Mark Sold</button>
+      </div>
+    </header>
+
+    <div class="detail-body" id="detail-body">
+      <!-- Dynamically rendered -->
+    </div>
+
+  </div><!-- /view-detail -->
+
+
+  <!-- ════════════════════════════════════════════
+       VIEW 3: GALLERY — Available Properties
+  ════════════════════════════════════════════ -->
+  <div id="view-gallery" class="view hidden">
+
+    <header class="detail-header">
+      <button class="back-btn" id="gallery-back-btn">← Back</button>
+      <h2 class="gallery-header-title">Available Gallery</h2>
+    </header>
+
+    <div class="gallery-intro">
+      <p>Showing only <strong>available</strong> properties with photos.</p>
+    </div>
+
+    <div class="gallery-grid" id="gallery-grid">
+      <!-- Dynamically rendered -->
+    </div>
+
+  </div><!-- /view-gallery -->
+
+
+  <!-- ════════════════════════════════════════════
+       MODAL: Add / Edit Property
+  ════════════════════════════════════════════ -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Add Property</h2>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+
+      <form id="property-form" class="property-form" novalidate>
+        <input type="hidden" id="form-id" />
+
+        <div class="form-group">
+          <label class="form-label" for="form-name">Property Name <span class="required">*</span></label>
+          <input type="text" id="form-name" class="form-input" placeholder="e.g. Corner plot near Shell" required />
+          <span class="form-hint">This is the main identifier — use the address or a nickname.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-location">Nearby Landmark / Location Note</label>
+          <input type="text" id="form-location" class="form-input" placeholder="e.g. Opposite Rif Fort, Willemstad" />
+          <span class="form-hint">Something that helps you quickly remember where this is.</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="form-price">Price <span class="required">*</span></label>
+            <input type="number" id="form-price" class="form-input" placeholder="0" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="form-area">Area (m²) <span class="required">*</span></label>
+            <input type="number" id="form-area" class="form-input" placeholder="0" min="0" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-land-type">Land Type</label>
+          <select id="form-land-type" class="form-input form-select">
+            <option value="owned">Owned Land</option>
+            <option value="government">Government Land</option>
+            <option value="leasehold">Leasehold</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-status">Status</label>
+          <select id="form-status" class="form-input form-select">
+            <option value="available">Available</option>
+            <option value="sold">Sold</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="form-description">Notes / Description</label>
+          <textarea id="form-description" class="form-input form-textarea" placeholder="Any extra details, conditions, contact info…" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Photos (max 5)</label>
+          <label class="image-upload-label" id="image-upload-label">
+            <span>+ Tap to add photos</span>
+            <input type="file" id="form-images" accept="image/*" multiple style="display:none" />
+          </label>
+          <div class="image-preview-grid" id="image-preview-grid"></div>
+        </div>
+
+        <div class="form-error" id="form-error"></div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="form-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="form-submit">Save Property</button>
+        </div>
+      </form>
+
+    </div>
+  </div><!-- /modal -->
+
+  <!-- Firebase SDKs -->
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>
