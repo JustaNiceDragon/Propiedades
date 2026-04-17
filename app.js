@@ -1,62 +1,21 @@
 // ============================================================
-//  MY PROPERTIES — app.js  (v2 — with Clients + Dashboard)
-//  Firebase Realtime Database · Pure Vanilla JS
+//  MY PROPERTIES — app.js  FINAL VERSION
+//  · Firebase Realtime Database (cloud storage)
+//  · 3 Languages: English / Spanish / Dutch
+//  · PIN lock · Properties · Clients · Dashboard
 // ============================================================
 
-// ── PIN LOCK ─────────────────────────────────────────────
-const CORRECT_PIN = "3342"; // ← change this to update your PIN
-let pinEntered = "";
-
-function initLock() {
-  const lockScreen = document.getElementById("lock-screen");
-  if (sessionStorage.getItem("unlocked") === "yes") {
-    lockScreen.classList.add("unlocked");
-    return;
-  }
-  document.querySelectorAll(".numpad-btn[data-digit]").forEach(btn => {
-    btn.addEventListener("click", () => addDigit(btn.dataset.digit));
-  });
-  document.getElementById("numpad-clear").addEventListener("click", removeDigit);
-  document.addEventListener("keydown", e => {
-    if (lockScreen.classList.contains("unlocked")) return;
-    if (e.key >= "0" && e.key <= "9") addDigit(e.key);
-    if (e.key === "Backspace") removeDigit();
-  });
-  updatePinBoxes();
-}
-function addDigit(d) {
-  if (pinEntered.length >= 4) return;
-  pinEntered += d;
-  updatePinBoxes();
-  if (pinEntered.length === 4) checkPin();
-}
-function removeDigit() {
-  pinEntered = pinEntered.slice(0, -1);
-  document.getElementById("pin-error").classList.add("hidden");
-  updatePinBoxes();
-}
-function updatePinBoxes() {
-  for (let i = 0; i < 4; i++) {
-    const box = document.getElementById("pin-box-" + i);
-    box.textContent = pinEntered[i] ? "●" : "";
-    box.classList.remove("active","filled","error");
-    if (i < pinEntered.length) box.classList.add("filled");
-    if (i === pinEntered.length) box.classList.add("active");
-  }
-}
-function checkPin() {
-  if (pinEntered === CORRECT_PIN) {
-    sessionStorage.setItem("unlocked", "yes");
-    document.getElementById("lock-screen").classList.add("unlocked");
-  } else {
-    for (let i = 0; i < 4; i++) document.getElementById("pin-box-"+i).classList.add("error");
-    document.getElementById("pin-error").classList.remove("hidden");
-    setTimeout(() => { pinEntered = ""; updatePinBoxes(); }, 1200);
-  }
-}
-
-// ── FIREBASE CONFIG ──────────────────────────────────────
-// Replace the placeholder values after setting up Firebase
+// ══════════════════════════════════════════════════════════
+//  🔥 FIREBASE SETUP
+//
+//  STEP 1: Go to https://console.firebase.google.com
+//  STEP 2: Create a project (any name)
+//  STEP 3: Build → Realtime Database → Create Database → Test mode
+//  STEP 4: Project Settings (gear icon) → Your apps → </> Web
+//  STEP 5: Register app → copy the values below
+//  STEP 6: Replace each "REPLACE_WITH_YOUR_..." with your real value
+//  STEP 7: Save this file and re-upload to GitHub
+// ══════════════════════════════════════════════════════════
 const FIREBASE_CONFIG = {
   apiKey:            "REPLACE_WITH_YOUR_apiKey",
   authDomain:        "REPLACE_WITH_YOUR_authDomain",
@@ -66,13 +25,244 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "REPLACE_WITH_YOUR_messagingSenderId",
   appId:             "REPLACE_WITH_YOUR_appId"
 };
+// Automatically detects if Firebase has been configured
 const FIREBASE_READY = !FIREBASE_CONFIG.apiKey.startsWith("REPLACE");
 
-// ── STATE ────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  🌍 TRANSLATIONS  (English / Spanish / Dutch)
+// ══════════════════════════════════════════════════════════
+const TRANSLATIONS = {
+  en: {
+    pinSubtitle:"Enter your PIN to continue", pinError:"Incorrect PIN. Try again.",
+    appTitle:"My Properties", portfolio:"Portfolio", navProperties:"Properties",
+    navClients:"Clients", navDashboard:"Dashboard", currency:"Currency",
+    searchPlaceholder:"Search name or location…", filterAll:"All", forSale:"For Sale",
+    forRent:"For Rent", sold:"Sold", sort:"Sort", sortNameAZ:"Name A–Z",
+    sortPriceUp:"Price ↑", sortPriceDown:"Price ↓", sortAreaUp:"Area ↑", sortAreaDown:"Area ↓",
+    addProperty:"+ Add Property", gallery:"🖼 Gallery", exportCSV:"↓ CSV",
+    emptyTitle:"Nothing here yet", emptySubProp:"Tap '+ Add Property' to get started.",
+    emptySubClient:"Tap '+ Add Client' to add your first client.",
+    colName:"Name", colSalePrice:"Sale Price", colRent:"Rent/mo", colArea:"Area",
+    colNearby:"Nearby", colLand:"Land", colStatus:"Status", colActions:"Actions",
+    back:"← Back", print:"🖨 Print", markSold:"Mark Sold", markUndone:"Undo",
+    galleryTitle:"Property Gallery", gallerySubtitle:"Showing For Sale and For Rent properties only.",
+    crmEyebrow:"CRM", clientSearchPlaceholder:"Search name or phone…",
+    buying:"Buying", selling:"Selling", renting:"Renting", multiple:"Multiple",
+    addClient:"+ Add Client",
+    fieldName:"Property Name", fieldNamePlaceholder:"e.g. Corner plot near Shell",
+    fieldNameHint:"Address or nickname — your main identifier.",
+    fieldNearby:"Nearby Landmark", fieldNearbyPlaceholder:"e.g. Near Rif Fort, Willemstad",
+    fieldSalePrice:"Sale Price", fieldRentMonth:"Rent / month",
+    fieldArea:"Area (m²)", fieldLandType:"Land Type",
+    landOwned:"Owned Land", landGov:"Government Land", landLease:"Leasehold", other:"Other",
+    fieldNotes:"Notes / Description", fieldNotesPlaceholder:"Extra details, conditions…",
+    photos:"Photos (max 5)", addPhotos:"+ Tap to add photos",
+    cancel:"Cancel", save:"Save",
+    clientFullName:"Full Name", clientNamePlaceholder:"e.g. Maria Lopez",
+    clientPhone:"Phone", clientEmail:"Email",
+    clientInterestedIn:"Interested In",
+    buyingProp:"Buying a property", sellingProp:"Selling a property",
+    rentingProp:"Renting a property", multipleProp:"Multiple",
+    clientBudget:"Budget", clientPrefArea:"Preferred Area", clientAreaPlaceholder:"e.g. Willemstad",
+    clientNotesPlaceholder:"Requirements, follow-up info…",
+    clientStatus:"Client Status",
+    statusActive:"🟢 Active — looking now", statusWarm:"🟡 Warm — interested",
+    statusClosed:"✅ Closed — deal done", statusInactive:"⚫ Inactive",
+    overviewEyebrow:"Overview",
+    dashProps:"Properties", dashForSale:"For Sale", dashForRent:"For Rent", dashSold:"Sold",
+    dashClients:"Clients", dashActive:"Active Now", dashWantBuy:"Want to Buy", dashWantRent:"Want to Rent",
+    dashRecentProps:"Recent Properties", dashRecentClients:"Recent Clients",
+    quickEdit:"Quick Edit", notesSection:"Notes & Description", saveNotes:"Save Notes",
+    fullEditBtn:"✏️ Full Edit Form",
+    toastAdded:"✅ Property added", toastUpdated:"✅ Property updated",
+    toastDeleted:"🗑 Property deleted", toastNotesSaved:"📝 Notes saved",
+    toastPhotoAdded:"📸 Photos added", toastPhotoRemoved:"🗑 Photo removed",
+    toastSaved:"✅ Saved", toastFileLarge:"⚠️ File too large (max 3MB)",
+    toastMax5:"⚠️ Max 5 photos per property", toastStorageFull:"⚠️ Storage full",
+    toastCsvExported:"📊 CSV exported", toastNothingExport:"Nothing to export",
+    toastClientAdded:"✅ Client added", toastClientUpdated:"✅ Client updated",
+    toastClientDeleted:"🗑 Client deleted",
+    toastForSale:"🟢 For Sale", toastForRent:"🔵 For Rent", toastSoldStatus:"🔴 Sold",
+    confirmDeleteProp:"Delete this property?\n\nThis cannot be undone.",
+    confirmDeleteClient:"Delete this client?\n\nThis cannot be undone.",
+    confirmRemovePhoto:"Remove this photo?",
+    errNameRequired:"Property name is required.",
+    errPriceInvalid:"Please enter a valid sale price.",
+    errAreaInvalid:"Please enter a valid area.",
+    errClientName:"Client name is required.",
+    errNotEmpty:"Name cannot be empty.", errMustBeNumber:"Must be a number.",
+    photosLabel:"Photos",
+  },
+  es: {
+    pinSubtitle:"Ingresa tu PIN para continuar", pinError:"PIN incorrecto. Intenta de nuevo.",
+    appTitle:"Mis Propiedades", portfolio:"Portafolio", navProperties:"Propiedades",
+    navClients:"Clientes", navDashboard:"Panel", currency:"Moneda",
+    searchPlaceholder:"Buscar nombre o ubicación…", filterAll:"Todos", forSale:"En Venta",
+    forRent:"En Alquiler", sold:"Vendido", sort:"Ordenar", sortNameAZ:"Nombre A–Z",
+    sortPriceUp:"Precio ↑", sortPriceDown:"Precio ↓", sortAreaUp:"Área ↑", sortAreaDown:"Área ↓",
+    addProperty:"+ Agregar Propiedad", gallery:"🖼 Galería", exportCSV:"↓ CSV",
+    emptyTitle:"Nada aquí aún", emptySubProp:"Toca '+ Agregar Propiedad' para comenzar.",
+    emptySubClient:"Toca '+ Agregar Cliente' para añadir tu primer cliente.",
+    colName:"Nombre", colSalePrice:"Precio Venta", colRent:"Alquiler/mes", colArea:"Área",
+    colNearby:"Cerca de", colLand:"Tierra", colStatus:"Estado", colActions:"Acciones",
+    back:"← Volver", print:"🖨 Imprimir", markSold:"Marcar Vendido", markUndone:"Deshacer",
+    galleryTitle:"Galería de Propiedades", gallerySubtitle:"Mostrando propiedades en venta y en alquiler.",
+    crmEyebrow:"CRM", clientSearchPlaceholder:"Buscar nombre o teléfono…",
+    buying:"Comprando", selling:"Vendiendo", renting:"Alquilando", multiple:"Múltiple",
+    addClient:"+ Agregar Cliente",
+    fieldName:"Nombre de la Propiedad", fieldNamePlaceholder:"Ej. Parcela esquinera cerca de Shell",
+    fieldNameHint:"Dirección o apodo — tu identificador principal.",
+    fieldNearby:"Punto de referencia cercano", fieldNearbyPlaceholder:"Ej. Cerca del Fuerte Rif",
+    fieldSalePrice:"Precio de Venta", fieldRentMonth:"Alquiler / mes",
+    fieldArea:"Área (m²)", fieldLandType:"Tipo de Terreno",
+    landOwned:"Terreno Propio", landGov:"Terreno del Gobierno", landLease:"Arrendamiento", other:"Otro",
+    fieldNotes:"Notas / Descripción", fieldNotesPlaceholder:"Detalles extra, condiciones…",
+    photos:"Fotos (máx 5)", addPhotos:"+ Toca para agregar fotos",
+    cancel:"Cancelar", save:"Guardar",
+    clientFullName:"Nombre Completo", clientNamePlaceholder:"Ej. María López",
+    clientPhone:"Teléfono", clientEmail:"Correo",
+    clientInterestedIn:"Interesado en",
+    buyingProp:"Comprar una propiedad", sellingProp:"Vender una propiedad",
+    rentingProp:"Alquilar una propiedad", multipleProp:"Múltiple",
+    clientBudget:"Presupuesto", clientPrefArea:"Zona preferida", clientAreaPlaceholder:"Ej. Willemstad",
+    clientNotesPlaceholder:"Requisitos, seguimiento…",
+    clientStatus:"Estado del Cliente",
+    statusActive:"🟢 Activo — buscando ahora", statusWarm:"🟡 Tibio — interesado",
+    statusClosed:"✅ Cerrado — trato hecho", statusInactive:"⚫ Inactivo",
+    overviewEyebrow:"Resumen",
+    dashProps:"Propiedades", dashForSale:"En Venta", dashForRent:"En Alquiler", dashSold:"Vendidas",
+    dashClients:"Clientes", dashActive:"Activos Ahora", dashWantBuy:"Quieren Comprar", dashWantRent:"Quieren Alquilar",
+    dashRecentProps:"Propiedades Recientes", dashRecentClients:"Clientes Recientes",
+    quickEdit:"Edición Rápida", notesSection:"Notas y Descripción", saveNotes:"Guardar Notas",
+    fullEditBtn:"✏️ Formulario Completo",
+    toastAdded:"✅ Propiedad añadida", toastUpdated:"✅ Propiedad actualizada",
+    toastDeleted:"🗑 Propiedad eliminada", toastNotesSaved:"📝 Notas guardadas",
+    toastPhotoAdded:"📸 Fotos añadidas", toastPhotoRemoved:"🗑 Foto eliminada",
+    toastSaved:"✅ Guardado", toastFileLarge:"⚠️ Archivo muy grande (máx 3MB)",
+    toastMax5:"⚠️ Máx 5 fotos por propiedad", toastStorageFull:"⚠️ Almacenamiento lleno",
+    toastCsvExported:"📊 CSV exportado", toastNothingExport:"Nada para exportar",
+    toastClientAdded:"✅ Cliente añadido", toastClientUpdated:"✅ Cliente actualizado",
+    toastClientDeleted:"🗑 Cliente eliminado",
+    toastForSale:"🟢 En Venta", toastForRent:"🔵 En Alquiler", toastSoldStatus:"🔴 Vendido",
+    confirmDeleteProp:"¿Eliminar esta propiedad?\n\nEsto no se puede deshacer.",
+    confirmDeleteClient:"¿Eliminar este cliente?\n\nEsto no se puede deshacer.",
+    confirmRemovePhoto:"¿Eliminar esta foto?",
+    errNameRequired:"El nombre de la propiedad es obligatorio.",
+    errPriceInvalid:"Ingresa un precio válido.",
+    errAreaInvalid:"Ingresa un área válida.",
+    errClientName:"El nombre del cliente es obligatorio.",
+    errNotEmpty:"El nombre no puede estar vacío.", errMustBeNumber:"Debe ser un número.",
+    photosLabel:"Fotos",
+  },
+  nl: {
+    pinSubtitle:"Voer je PIN in om door te gaan", pinError:"Onjuiste PIN. Probeer opnieuw.",
+    appTitle:"Mijn Eigendommen", portfolio:"Portefeuille", navProperties:"Eigendommen",
+    navClients:"Klanten", navDashboard:"Dashboard", currency:"Valuta",
+    searchPlaceholder:"Zoek op naam of locatie…", filterAll:"Alles", forSale:"Te Koop",
+    forRent:"Te Huur", sold:"Verkocht", sort:"Sorteren", sortNameAZ:"Naam A–Z",
+    sortPriceUp:"Prijs ↑", sortPriceDown:"Prijs ↓", sortAreaUp:"Opp. ↑", sortAreaDown:"Opp. ↓",
+    addProperty:"+ Eigendom Toevoegen", gallery:"🖼 Galerij", exportCSV:"↓ CSV",
+    emptyTitle:"Nog niets hier", emptySubProp:"Tik op '+ Eigendom Toevoegen' om te beginnen.",
+    emptySubClient:"Tik op '+ Klant Toevoegen' om je eerste klant toe te voegen.",
+    colName:"Naam", colSalePrice:"Verkoopprijs", colRent:"Huur/mnd", colArea:"Opp.",
+    colNearby:"In de buurt", colLand:"Grond", colStatus:"Status", colActions:"Acties",
+    back:"← Terug", print:"🖨 Afdrukken", markSold:"Markeer Verkocht", markUndone:"Ongedaan",
+    galleryTitle:"Eigendom Galerij", gallerySubtitle:"Toont alleen te koop en te huur eigendommen.",
+    crmEyebrow:"CRM", clientSearchPlaceholder:"Zoek naam of telefoon…",
+    buying:"Koopt", selling:"Verkoopt", renting:"Huurt", multiple:"Meerdere",
+    addClient:"+ Klant Toevoegen",
+    fieldName:"Naam Eigendom", fieldNamePlaceholder:"Bijv. Hoekperceel bij Shell",
+    fieldNameHint:"Adres of bijnaam — jouw hoofdidentificatie.",
+    fieldNearby:"Nabijgelegen herkenningspunt", fieldNearbyPlaceholder:"Bijv. Naast Rif Fort",
+    fieldSalePrice:"Verkoopprijs", fieldRentMonth:"Huur / maand",
+    fieldArea:"Oppervlakte (m²)", fieldLandType:"Type Grond",
+    landOwned:"Eigen Grond", landGov:"Overheidsgrond", landLease:"Erfpacht", other:"Anders",
+    fieldNotes:"Notities / Beschrijving", fieldNotesPlaceholder:"Extra details, voorwaarden…",
+    photos:"Foto's (max 5)", addPhotos:"+ Tik om foto's toe te voegen",
+    cancel:"Annuleren", save:"Opslaan",
+    clientFullName:"Volledige Naam", clientNamePlaceholder:"Bijv. Maria Lopez",
+    clientPhone:"Telefoon", clientEmail:"E-mail",
+    clientInterestedIn:"Geïnteresseerd in",
+    buyingProp:"Een eigendom kopen", sellingProp:"Een eigendom verkopen",
+    rentingProp:"Een eigendom huren", multipleProp:"Meerdere",
+    clientBudget:"Budget", clientPrefArea:"Voorkeurgebied", clientAreaPlaceholder:"Bijv. Willemstad",
+    clientNotesPlaceholder:"Vereisten, opvolginfo…",
+    clientStatus:"Klant Status",
+    statusActive:"🟢 Actief — zoekt nu", statusWarm:"🟡 Warm — geïnteresseerd",
+    statusClosed:"✅ Gesloten — deal gedaan", statusInactive:"⚫ Inactief",
+    overviewEyebrow:"Overzicht",
+    dashProps:"Eigendommen", dashForSale:"Te Koop", dashForRent:"Te Huur", dashSold:"Verkocht",
+    dashClients:"Klanten", dashActive:"Nu Actief", dashWantBuy:"Wil Kopen", dashWantRent:"Wil Huren",
+    dashRecentProps:"Recente Eigendommen", dashRecentClients:"Recente Klanten",
+    quickEdit:"Snel Bewerken", notesSection:"Notities & Beschrijving", saveNotes:"Notities Opslaan",
+    fullEditBtn:"✏️ Volledig Formulier",
+    toastAdded:"✅ Eigendom toegevoegd", toastUpdated:"✅ Eigendom bijgewerkt",
+    toastDeleted:"🗑 Eigendom verwijderd", toastNotesSaved:"📝 Notities opgeslagen",
+    toastPhotoAdded:"📸 Foto's toegevoegd", toastPhotoRemoved:"🗑 Foto verwijderd",
+    toastSaved:"✅ Opgeslagen", toastFileLarge:"⚠️ Bestand te groot (max 3MB)",
+    toastMax5:"⚠️ Max 5 foto's per eigendom", toastStorageFull:"⚠️ Opslag vol",
+    toastCsvExported:"📊 CSV geëxporteerd", toastNothingExport:"Niets te exporteren",
+    toastClientAdded:"✅ Klant toegevoegd", toastClientUpdated:"✅ Klant bijgewerkt",
+    toastClientDeleted:"🗑 Klant verwijderd",
+    toastForSale:"🟢 Te Koop", toastForRent:"🔵 Te Huur", toastSoldStatus:"🔴 Verkocht",
+    confirmDeleteProp:"Dit eigendom verwijderen?\n\nDit kan niet ongedaan worden gemaakt.",
+    confirmDeleteClient:"Deze klant verwijderen?\n\nDit kan niet ongedaan worden gemaakt.",
+    confirmRemovePhoto:"Deze foto verwijderen?",
+    errNameRequired:"Naam van het eigendom is verplicht.",
+    errPriceInvalid:"Voer een geldige verkoopprijs in.",
+    errAreaInvalid:"Voer een geldige oppervlakte in.",
+    errClientName:"Naam van de klant is verplicht.",
+    errNotEmpty:"Naam mag niet leeg zijn.", errMustBeNumber:"Moet een getal zijn.",
+    photosLabel:"Foto's",
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+//  PIN LOCK (password: 3342)
+// ══════════════════════════════════════════════════════════
+const CORRECT_PIN = "3342";
+let pinEntered = "";
+
+function initLock() {
+  const ls = document.getElementById("lock-screen");
+  if (sessionStorage.getItem("unlocked") === "yes") { ls.classList.add("unlocked"); return; }
+  document.querySelectorAll(".numpad-btn[data-digit]").forEach(b => b.addEventListener("click", () => addDigit(b.dataset.digit)));
+  document.getElementById("numpad-clear").addEventListener("click", removeDigit);
+  document.addEventListener("keydown", e => {
+    if (ls.classList.contains("unlocked")) return;
+    if (e.key >= "0" && e.key <= "9") addDigit(e.key);
+    if (e.key === "Backspace") removeDigit();
+  });
+  updatePinBoxes();
+}
+function addDigit(d) { if (pinEntered.length >= 4) return; pinEntered += d; updatePinBoxes(); if (pinEntered.length === 4) checkPin(); }
+function removeDigit() { pinEntered = pinEntered.slice(0,-1); document.getElementById("pin-error").classList.add("hidden"); updatePinBoxes(); }
+function updatePinBoxes() {
+  for (let i=0;i<4;i++) {
+    const b=document.getElementById("pin-box-"+i);
+    b.textContent = pinEntered[i]?"●":"";
+    b.classList.remove("active","filled","error");
+    if (i<pinEntered.length) b.classList.add("filled");
+    if (i===pinEntered.length) b.classList.add("active");
+  }
+}
+function checkPin() {
+  if (pinEntered===CORRECT_PIN) { sessionStorage.setItem("unlocked","yes"); document.getElementById("lock-screen").classList.add("unlocked"); }
+  else {
+    for(let i=0;i<4;i++) document.getElementById("pin-box-"+i).classList.add("error");
+    document.getElementById("pin-error").classList.remove("hidden");
+    setTimeout(()=>{ pinEntered=""; updatePinBoxes(); }, 1200);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
 let properties   = [];
 let clients      = [];
 let currentId    = null;
 let currency     = "XCG";
+let lang         = "en";
 let searchQuery  = "";
 let filterStatus = "all";
 let sortMode     = "none";
@@ -82,12 +272,69 @@ let dbRef        = null;
 let submitting   = false;
 let formImages_staged = [];
 
-const CURRENCY_SYMBOLS = { XCG: "XCG ", USD: "$ ", EUR: "€ " };
-
-// ── DOM SHORTCUTS ────────────────────────────────────────
+const CURRENCY_SYMBOLS = { XCG:"XCG ", USD:"$ ", EUR:"€ " };
 const $ = id => document.getElementById(id);
 
-// ── FIREBASE / LOCALSTORAGE ──────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  i18n — TRANSLATIONS ENGINE
+// ══════════════════════════════════════════════════════════
+function t(key) { return (TRANSLATIONS[lang]||TRANSLATIONS.en)[key] || TRANSLATIONS.en[key] || key; }
+
+function applyTranslations() {
+  // text content
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    const val = t(key);
+    if (val) el.textContent = val;
+  });
+  // placeholders
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    const val = t(key);
+    if (val) el.placeholder = val;
+  });
+  // update html lang attribute
+  document.documentElement.lang = lang;
+}
+
+function initLangSwitcher() {
+  // Auto-detect browser language on first visit
+  const saved = localStorage.getItem("app_lang");
+  if (saved && TRANSLATIONS[saved]) {
+    lang = saved;
+  } else {
+    const browser = (navigator.language || "en").toLowerCase().slice(0,2);
+    lang = TRANSLATIONS[browser] ? browser : "en";
+    localStorage.setItem("app_lang", lang);
+  }
+  updateLangButtons();
+  applyTranslations();
+
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      lang = btn.dataset.lang;
+      localStorage.setItem("app_lang", lang);
+      updateLangButtons();
+      applyTranslations();
+      // Re-render dynamic content
+      renderTable();
+      renderClients();
+      renderDashboard();
+      if (currentId) {
+        const p = properties.find(p => p.id === currentId);
+        if (p) renderDetail(p);
+      }
+    });
+  });
+}
+
+function updateLangButtons() {
+  document.querySelectorAll(".lang-btn").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
+}
+
+// ══════════════════════════════════════════════════════════
+//  FIREBASE
+// ══════════════════════════════════════════════════════════
 async function initFirebase() {
   if (!FIREBASE_READY) { loadFromLocalStorage(); return; }
   try {
@@ -96,453 +343,373 @@ async function initFirebase() {
     const app = initializeApp(FIREBASE_CONFIG);
     const db  = getDatabase(app);
     dbRef = { db, ref, set };
-    onValue(ref(db, "properties"), snap => {
-      const d = snap.val();
-      properties = d ? Object.values(d) : [];
+    // Listen to properties
+    onValue(ref(db,"properties"), snap => {
+      properties = snap.val() ? Object.values(snap.val()) : [];
       renderAll();
     });
-    onValue(ref(db, "clients"), snap => {
-      const d = snap.val();
-      clients = d ? Object.values(d) : [];
-      renderClients();
-      renderDashboard();
+    // Listen to clients
+    onValue(ref(db,"clients"), snap => {
+      clients = snap.val() ? Object.values(snap.val()) : [];
+      renderClients(); renderDashboard();
     });
   } catch(err) {
-    console.error("Firebase failed, using LocalStorage", err);
+    console.error("Firebase error, falling back to LocalStorage:", err);
     loadFromLocalStorage();
   }
 }
+
 async function saveProperties() {
   if (FIREBASE_READY && dbRef) {
-    const obj = {};
-    properties.forEach(p => { obj[p.id] = p; });
-    await dbRef.set(dbRef.ref(dbRef.db, "properties"), obj);
+    const obj = {}; properties.forEach(p => { obj[p.id]=p; });
+    await dbRef.set(dbRef.ref(dbRef.db,"properties"), obj);
   } else {
-    try { localStorage.setItem("my_properties", JSON.stringify(properties)); } catch(e) { showToast("⚠️ Storage full"); }
+    try { localStorage.setItem("my_properties", JSON.stringify(properties)); } catch { showToast(t("toastStorageFull")); }
     renderAll();
   }
 }
 async function saveClients() {
   if (FIREBASE_READY && dbRef) {
-    const obj = {};
-    clients.forEach(c => { obj[c.id] = c; });
-    await dbRef.set(dbRef.ref(dbRef.db, "clients"), obj);
+    const obj = {}; clients.forEach(c => { obj[c.id]=c; });
+    await dbRef.set(dbRef.ref(dbRef.db,"clients"), obj);
   } else {
-    try { localStorage.setItem("my_clients", JSON.stringify(clients)); } catch(e) { showToast("⚠️ Storage full"); }
-    renderClients();
-    renderDashboard();
+    try { localStorage.setItem("my_clients", JSON.stringify(clients)); } catch { showToast(t("toastStorageFull")); }
+    renderClients(); renderDashboard();
   }
 }
 function loadFromLocalStorage() {
-  try { properties = JSON.parse(localStorage.getItem("my_properties") || "[]"); } catch { properties = []; }
-  try { clients    = JSON.parse(localStorage.getItem("my_clients")    || "[]"); } catch { clients = []; }
-  renderAll();
-  renderClients();
-  renderDashboard();
+  try { properties = JSON.parse(localStorage.getItem("my_properties")||"[]"); } catch { properties=[]; }
+  try { clients    = JSON.parse(localStorage.getItem("my_clients")||"[]"); }    catch { clients=[]; }
+  renderAll(); renderClients(); renderDashboard();
 }
 
-// ── HELPERS ──────────────────────────────────────────────
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-function escHtml(s) {
-  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
+// ══════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function escHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function formatPrice(num) {
-  const n = parseFloat(num);
-  if (!num || isNaN(n)) return "—";
-  return (CURRENCY_SYMBOLS[currency]||"") + n.toLocaleString("en-US");
+  const n=parseFloat(num);
+  if (!num||isNaN(n)) return "—";
+  return (CURRENCY_SYMBOLS[currency]||"")+n.toLocaleString("en-US");
 }
-function showToast(msg, dur=2800) {
-  const t = $("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), dur);
+function showToast(msg,dur=2800) {
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),dur);
 }
 function toBase64(file) {
-  return new Promise((res,rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result);
-    r.onerror = () => rej(new Error("Read failed"));
-    r.readAsDataURL(file);
-  });
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(); r.readAsDataURL(file); });
 }
+function downloadCSV(rows,filename) {
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+}
+function showErr(id,msg){ $(id).textContent=msg; $(id).classList.add("visible"); }
 
-// ── TAB NAVIGATION ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════════════════════════════
 function initTabs() {
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const tab = btn.dataset.tab;
-      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(t => { t.classList.remove("active"); t.classList.add("hidden"); });
+      document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(t=>{t.classList.remove("active");t.classList.add("hidden");});
       btn.classList.add("active");
-      const tc = $("tab-" + tab);
-      tc.classList.remove("hidden");
-      tc.classList.add("active");
-      if (tab === "dashboard") renderDashboard();
+      const tc=$("tab-"+btn.dataset.tab);
+      tc.classList.remove("hidden"); tc.classList.add("active");
+      if (btn.dataset.tab==="dashboard") renderDashboard();
     });
   });
 }
 
-// ── PROPERTY TABLE ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  PROPERTY TABLE
+// ══════════════════════════════════════════════════════════
 function showPropertyView(name) {
-  ["view-home","view-detail","view-gallery"].forEach(id => {
-    const v = $(id);
-    v.classList.remove("active");
-    v.classList.add("hidden");
+  ["view-home","view-detail","view-gallery"].forEach(id=>{
+    const v=$(id); v.classList.remove("active"); v.classList.add("hidden");
   });
-  const t = $(name);
-  t.classList.remove("hidden");
-  t.classList.add("active");
+  const v=$(name); v.classList.remove("hidden"); v.classList.add("active");
   window.scrollTo(0,0);
 }
 
 function getFiltered() {
-  let list = [...properties];
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
-    list = list.filter(p => p.name.toLowerCase().includes(q) || (p.location||"").toLowerCase().includes(q));
-  }
-  if (filterStatus !== "all") list = list.filter(p => p.status === filterStatus);
-  switch(sortMode) {
-    case "name-asc":   list.sort((a,b) => a.name.localeCompare(b.name)); break;
-    case "price-asc":  list.sort((a,b) => a.price - b.price); break;
-    case "price-desc": list.sort((a,b) => b.price - a.price); break;
-    case "area-asc":   list.sort((a,b) => a.area - b.area); break;
-    case "area-desc":  list.sort((a,b) => b.area - a.area); break;
+  let list=[...properties];
+  if (searchQuery) { const q=searchQuery.toLowerCase(); list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.location||"").toLowerCase().includes(q)); }
+  if (filterStatus!=="all") list=list.filter(p=>p.status===filterStatus);
+  switch(sortMode){
+    case "name-asc":   list.sort((a,b)=>a.name.localeCompare(b.name)); break;
+    case "price-asc":  list.sort((a,b)=>a.price-b.price); break;
+    case "price-desc": list.sort((a,b)=>b.price-a.price); break;
+    case "area-asc":   list.sort((a,b)=>a.area-b.area); break;
+    case "area-desc":  list.sort((a,b)=>b.area-a.area); break;
   }
   return list;
 }
 
 function renderTable() {
-  const list  = getFiltered();
-  const total = properties.length;
-  const avail = properties.filter(p => p.status==="available").length;
-  const rent  = properties.filter(p => p.status==="rent").length;
-  $("property-count").textContent = `${total} listing${total!==1?"s":""} · ${avail} sale · ${rent} rent`;
+  const list=getFiltered();
+  const total=properties.length, avail=properties.filter(p=>p.status==="available").length, rent=properties.filter(p=>p.status==="rent").length;
+  $("property-count").textContent=`${total} · ${avail} ${t("forSale").toLowerCase()} · ${rent} ${t("forRent").toLowerCase()}`;
 
-  const tbody = $("property-tbody");
-  const empty = $("empty-state");
-  const table = $("property-table");
+  // Update table headers
+  const headers=["colName","colSalePrice","colRent","colArea","colNearby","colLand","colStatus","colActions"];
+  document.querySelectorAll(".property-table thead th").forEach((th,i)=>{ if(headers[i]) th.textContent=t(headers[i]); });
 
-  if (list.length === 0) { empty.classList.remove("hidden"); table.style.display="none"; return; }
+  // Update filter options
+  const fs=$("filter-status");
+  fs.options[0].text=t("filterAll"); fs.options[1].text=t("forSale"); fs.options[2].text=t("forRent"); fs.options[3].text=t("sold");
+
+  const empty=$("empty-state"), table=$("property-table");
+  if (list.length===0) { empty.classList.remove("hidden"); table.style.display="none"; return; }
   empty.classList.add("hidden"); table.style.display="";
 
-  const landMap = { owned:"Owned", government:"Gov't", leasehold:"Lease", other:"Other" };
-  const frag = document.createDocumentFragment();
-
-  list.forEach(p => {
-    const tr = document.createElement("tr");
-    tr.dataset.id = p.id;
-    if (p.status==="sold") tr.classList.add("row-sold");
-    if (p.status==="rent") tr.classList.add("row-rent");
-
-    const statusBadge = p.status==="sold"
-      ? `<span class="status-badge status-sold">Sold</span>`
-      : p.status==="rent"
-      ? `<span class="status-badge status-rent">For Rent</span>`
-      : `<span class="status-badge status-available">For Sale</span>`;
-
-    const soldIcon = p.status==="sold" ? "🔴" : p.status==="rent" ? "🔵" : "🟢";
-
-    tr.innerHTML = `
-      <td>
-        <div class="name-cell">
-          <button class="name-link" data-action="open" data-id="${p.id}">${escHtml(p.name)}</button>
-          ${p.location ? `<span class="name-sub">${escHtml(p.location)}</span>` : ""}
-        </div>
-      </td>
+  const landMap={owned:t("landOwned"),government:t("landGov"),leasehold:t("landLease"),other:t("other")};
+  const frag=document.createDocumentFragment();
+  list.forEach(p=>{
+    const tr=document.createElement("tr"); tr.dataset.id=p.id;
+    if(p.status==="sold") tr.classList.add("row-sold");
+    if(p.status==="rent") tr.classList.add("row-rent");
+    const badge=p.status==="sold"?`<span class="status-badge status-sold">${t("sold")}</span>`:p.status==="rent"?`<span class="status-badge status-rent">${t("forRent")}</span>`:`<span class="status-badge status-available">${t("forSale")}</span>`;
+    const icon=p.status==="sold"?"🔴":p.status==="rent"?"🔵":"🟢";
+    tr.innerHTML=`
+      <td><div class="name-cell"><button class="name-link" data-action="open" data-id="${p.id}">${escHtml(p.name)}</button>${p.location?`<span class="name-sub">${escHtml(p.location)}</span>`:""}</div></td>
       <td class="price-cell">${formatPrice(p.price)}</td>
-      <td class="rent-cell">${p.rentPrice ? formatPrice(p.rentPrice)+"/mo" : "—"}</td>
-      <td>${p.area ? p.area+" m²" : "—"}</td>
+      <td class="rent-cell">${p.rentPrice?formatPrice(p.rentPrice)+"/mo":"—"}</td>
+      <td>${p.area?p.area+" m²":"—"}</td>
       <td style="font-size:0.8rem;color:var(--text-muted);max-width:100px;white-space:normal">${escHtml(p.location||"—")}</td>
       <td style="font-size:0.8rem">${landMap[p.landType]||p.landType||"—"}</td>
-      <td>${statusBadge}</td>
-      <td>
-        <div class="actions-cell">
-          <button class="action-icon-btn" data-action="toggle-sold" data-id="${p.id}" title="Toggle status">${soldIcon}</button>
-          <button class="action-icon-btn" data-action="edit"        data-id="${p.id}" title="Edit">✏️</button>
-          <button class="action-icon-btn" data-action="delete"      data-id="${p.id}" title="Delete">🗑</button>
-        </div>
-      </td>
-    `;
+      <td>${badge}</td>
+      <td><div class="actions-cell">
+        <button class="action-icon-btn" data-action="toggle-sold" data-id="${p.id}">${icon}</button>
+        <button class="action-icon-btn" data-action="edit"        data-id="${p.id}">✏️</button>
+        <button class="action-icon-btn" data-action="delete"      data-id="${p.id}">🗑</button>
+      </div></td>`;
     frag.appendChild(tr);
   });
-  tbody.innerHTML = "";
-  tbody.appendChild(frag);
+  $("property-tbody").innerHTML=""; $("property-tbody").appendChild(frag);
 }
 
 function renderAll() { renderTable(); renderDashboard(); }
 
-// Table click events
-$("property-tbody").addEventListener("click", e => {
-  const btn = e.target.closest("[data-action]");
-  if (!btn) return;
-  const { action, id } = btn.dataset;
-  if (action==="open")        openDetail(id);
-  if (action==="toggle-sold") cycleStatus(id);
-  if (action==="edit")        openEditModal(id);
-  if (action==="delete")      deleteProperty(id);
+$("property-tbody").addEventListener("click", e=>{
+  const btn=e.target.closest("[data-action]"); if(!btn) return;
+  const {action,id}=btn.dataset;
+  if(action==="open")        openDetail(id);
+  if(action==="toggle-sold") cycleStatus(id);
+  if(action==="edit")        openEditModal(id);
+  if(action==="delete")      deleteProperty(id);
 });
 
-// Cycle through Available → For Rent → Sold → Available
 async function cycleStatus(id) {
-  const p = properties.find(p => p.id===id);
-  if (!p) return;
-  const next = { available:"rent", rent:"sold", sold:"available" };
-  p.status = next[p.status] || "available";
+  const p=properties.find(p=>p.id===id); if(!p) return;
+  const next={available:"rent",rent:"sold",sold:"available"};
+  p.status=next[p.status]||"available";
   await saveProperties();
-  const labels = { available:"🟢 For Sale", rent:"🔵 For Rent", sold:"🔴 Sold" };
+  const labels={available:t("toastForSale"),rent:t("toastForRent"),sold:t("toastSoldStatus")};
   showToast(labels[p.status]);
 }
 
 async function deleteProperty(id) {
-  const p = properties.find(p => p.id===id);
-  if (!p) return;
-  if (!confirm(`Delete "${p.name}"?\nThis cannot be undone.`)) return;
-  properties = properties.filter(p => p.id!==id);
-  await saveProperties();
-  showToast("🗑 Property deleted");
+  const p=properties.find(p=>p.id===id); if(!p) return;
+  if(!confirm(t("confirmDeleteProp"))) return;
+  properties=properties.filter(p=>p.id!==id);
+  await saveProperties(); showToast(t("toastDeleted"));
 }
 
-// Search / filter / sort
-$("search-input").addEventListener("input", () => {
-  searchQuery = $("search-input").value.trim();
-  $("search-clear").classList.toggle("hidden", !searchQuery);
-  renderTable();
-});
-$("search-clear").addEventListener("click", () => {
-  $("search-input").value = ""; searchQuery = "";
-  $("search-clear").classList.add("hidden"); renderTable();
-});
-$("filter-status").addEventListener("change", () => { filterStatus=$("filter-status").value; renderTable(); });
-$("sort-select").addEventListener("change",   () => { sortMode=$("sort-select").value; renderTable(); });
+// Search / Filter / Sort
+$("search-input").addEventListener("input",()=>{ searchQuery=$("search-input").value.trim(); $("search-clear").classList.toggle("hidden",!searchQuery); renderTable(); });
+$("search-clear").addEventListener("click",()=>{ $("search-input").value=""; searchQuery=""; $("search-clear").classList.add("hidden"); renderTable(); });
+$("filter-status").addEventListener("change",()=>{ filterStatus=$("filter-status").value; renderTable(); });
+$("sort-select").addEventListener("change",()=>{ sortMode=$("sort-select").value; renderTable(); });
 
 // Currency
-document.querySelectorAll(".currency-pill").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".currency-pill").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active"); currency = btn.dataset.currency;
+document.querySelectorAll(".currency-pill").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".currency-pill").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); currency=btn.dataset.currency;
     renderTable();
-    if (currentId) { const p=properties.find(p=>p.id===currentId); if(p) renderDetail(p); }
+    if(currentId){const p=properties.find(p=>p.id===currentId);if(p) renderDetail(p);}
   });
 });
 
-// ── ADD / EDIT PROPERTY MODAL ────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  ADD / EDIT PROPERTY MODAL
+// ══════════════════════════════════════════════════════════
 $("btn-add-property").addEventListener("click", openAddModal);
 
 function openAddModal() {
   $("form-id").value=""; $("form-name").value=""; $("form-location").value="";
   $("form-price").value=""; $("form-rent").value=""; $("form-area").value="";
   $("form-land-type").value="owned"; $("form-status").value="available";
-  $("form-description").value="";
-  formImages_staged=[]; $("image-preview-grid").innerHTML="";
+  $("form-description").value=""; formImages_staged=[]; $("image-preview-grid").innerHTML="";
   $("form-error").classList.remove("visible");
-  $("modal-title").textContent="Add Property";
+  $("modal-title").textContent=t("addProperty");
   $("modal-overlay").classList.remove("hidden");
-  setTimeout(()=>$("form-name").focus(), 100);
+  setTimeout(()=>$("form-name").focus(),100);
 }
-
 function openEditModal(id) {
-  const p = properties.find(p=>p.id===id);
-  if (!p) return;
+  const p=properties.find(p=>p.id===id); if(!p) return;
   $("form-id").value=p.id; $("form-name").value=p.name; $("form-location").value=p.location||"";
   $("form-price").value=p.price; $("form-rent").value=p.rentPrice||""; $("form-area").value=p.area;
   $("form-land-type").value=p.landType||"owned"; $("form-status").value=p.status||"available";
   $("form-description").value=p.description||"";
-  formImages_staged=p.images?[...p.images]:[];
-  renderFormImagePreviews();
+  formImages_staged=p.images?[...p.images]:[]; renderFormImagePreviews();
   $("form-error").classList.remove("visible");
-  $("modal-title").textContent="Edit Property";
+  $("modal-title").textContent=escHtml(p.name);
   $("modal-overlay").classList.remove("hidden");
-  setTimeout(()=>$("form-name").focus(), 100);
+  setTimeout(()=>$("form-name").focus(),100);
 }
+function closePropertyModal(){ $("modal-overlay").classList.add("hidden"); submitting=false; }
+$("modal-close").addEventListener("click",closePropertyModal);
+$("form-cancel").addEventListener("click",closePropertyModal);
+$("modal-overlay").addEventListener("click",e=>{if(e.target===$("modal-overlay"))closePropertyModal();});
 
-function closePropertyModal() { $("modal-overlay").classList.add("hidden"); submitting=false; }
-$("modal-close").addEventListener("click", closePropertyModal);
-$("form-cancel").addEventListener("click", closePropertyModal);
-$("modal-overlay").addEventListener("click", e => { if(e.target===$("modal-overlay")) closePropertyModal(); });
-
-// Image upload in form
-$("form-images").addEventListener("change", async e => {
-  const files = Array.from(e.target.files);
-  if (formImages_staged.length+files.length>5) { showToast("⚠️ Max 5 photos"); return; }
-  for (const file of files) {
-    if (file.size>3*1024*1024) { showToast(`⚠️ ${file.name} too large (max 3MB)`); continue; }
-    formImages_staged.push(await toBase64(file));
-  }
-  $("form-images").value="";
-  renderFormImagePreviews();
+$("form-images").addEventListener("change",async e=>{
+  const files=Array.from(e.target.files);
+  if(formImages_staged.length+files.length>5){showToast(t("toastMax5"));return;}
+  for(const f of files){if(f.size>3*1024*1024){showToast(t("toastFileLarge"));continue;} formImages_staged.push(await toBase64(f));}
+  $("form-images").value=""; renderFormImagePreviews();
 });
-function renderFormImagePreviews() {
-  const grid=$("image-preview-grid"); grid.innerHTML="";
+function renderFormImagePreviews(){
+  const g=$("image-preview-grid"); g.innerHTML="";
   formImages_staged.forEach((src,i)=>{
     const w=document.createElement("div"); w.className="preview-thumb-wrap";
-    w.innerHTML=`<img src="${src}" alt=""/><button class="thumb-remove" data-index="${i}" type="button">✕</button>`;
-    grid.appendChild(w);
+    w.innerHTML=`<img src="${src}"/><button class="thumb-remove" data-index="${i}" type="button">✕</button>`;
+    g.appendChild(w);
   });
 }
-$("image-preview-grid").addEventListener("click", e => {
+$("image-preview-grid").addEventListener("click",e=>{
   const btn=e.target.closest(".thumb-remove"); if(!btn) return;
   formImages_staged.splice(parseInt(btn.dataset.index),1); renderFormImagePreviews();
 });
 
-// Form submit
-$("property-form").addEventListener("submit", async e => {
+$("property-form").addEventListener("submit",async e=>{
   e.preventDefault(); if(submitting) return;
   const name=($("form-name").value||"").trim();
   const price=parseFloat($("form-price").value);
   const area=parseFloat($("form-area").value);
   const rentPrice=parseFloat($("form-rent").value)||0;
-  if (!name)             { showErr("form-error","Property name is required."); return; }
-  if (isNaN(price)||price<0) { showErr("form-error","Enter a valid sale price."); return; }
-  if (isNaN(area)||area<0)   { showErr("form-error","Enter a valid area."); return; }
-
-  submitting=true; $("form-submit").textContent="Saving…";
+  if(!name)          {showErr("form-error",t("errNameRequired"));return;}
+  if(isNaN(price)||price<0){showErr("form-error",t("errPriceInvalid"));return;}
+  if(isNaN(area)||area<0)  {showErr("form-error",t("errAreaInvalid"));return;}
+  submitting=true; $("form-submit").textContent=t("save")+"…";
   const id=$("form-id").value||uid();
-  const prop = {
-    id, name,
-    location:    ($("form-location").value||"").trim(),
-    price, rentPrice: rentPrice||0,
-    area,
-    landType:    $("form-land-type").value,
-    status:      $("form-status").value,
-    description: ($("form-description").value||"").trim(),
-    images:      [...formImages_staged],
-    updatedAt:   Date.now()
-  };
+  const prop={id,name,location:($("form-location").value||"").trim(),price,rentPrice,area,landType:$("form-land-type").value,status:$("form-status").value,description:($("form-description").value||"").trim(),images:[...formImages_staged],updatedAt:Date.now()};
   const idx=properties.findIndex(p=>p.id===id);
-  if (idx>=0) { prop.createdAt=properties[idx].createdAt; properties[idx]=prop; }
-  else        { prop.createdAt=Date.now(); properties.push(prop); }
-
-  await saveProperties();
-  closePropertyModal();
-  submitting=false; $("form-submit").textContent="Save Property";
-  showToast(idx>=0?"✅ Property updated":"✅ Property added");
+  if(idx>=0){prop.createdAt=properties[idx].createdAt;properties[idx]=prop;}
+  else{prop.createdAt=Date.now();properties.push(prop);}
+  await saveProperties(); closePropertyModal();
+  submitting=false; $("form-submit").textContent=t("save");
+  showToast(idx>=0?t("toastUpdated"):t("toastAdded"));
 });
 
-// ── DETAIL VIEW ──────────────────────────────────────────
-function openDetail(id) {
-  const p=properties.find(p=>p.id===id); if(!p) return;
-  currentId=id; renderDetail(p); showPropertyView("view-detail");
-}
-function renderDetail(p) {
+// ══════════════════════════════════════════════════════════
+//  DETAIL VIEW
+// ══════════════════════════════════════════════════════════
+function openDetail(id){const p=properties.find(p=>p.id===id);if(!p) return;currentId=id;renderDetail(p);showPropertyView("view-detail");}
+
+function renderDetail(p){
   const isSold=p.status==="sold", isRent=p.status==="rent";
   const sb=$("detail-sold-btn");
-  sb.textContent = isSold?"✓ Sold — Undo" : isRent?"✓ For Rent — Undo" : "Mark as Sold";
-  sb.className="btn-sold-toggle"+(isSold?" is-sold":isRent?" is-sold":"");
-
-  const landLabel={owned:"Owned Land",government:"Government Land",leasehold:"Leasehold",other:"Other"}[p.landType]||p.landType||"—";
-  const statusBadge = isSold
-    ? `<span class="status-badge status-sold">Sold</span>`
-    : isRent
-    ? `<span class="status-badge status-rent">For Rent</span>`
-    : `<span class="status-badge status-available">For Sale</span>`;
-
-  const imgs=(p.images||[]).map((src,i)=>`
-    <div class="detail-img-wrap" data-index="${i}">
-      <img src="${src}" alt="Photo ${i+1}" loading="lazy"/>
-      <button class="detail-img-remove" data-action="remove-img" data-index="${i}" type="button">✕</button>
-    </div>`).join("");
+  sb.textContent=isSold?t("markUndone")+" ↩":isRent?t("markUndone")+" ↩":t("markSold");
+  sb.className="btn-sold-toggle"+(isSold||isRent?" is-sold":"");
+  const landLabel={owned:t("landOwned"),government:t("landGov"),leasehold:t("landLease"),other:t("other")}[p.landType]||p.landType||"—";
+  const badge=isSold?`<span class="status-badge status-sold">${t("sold")}</span>`:isRent?`<span class="status-badge status-rent">${t("forRent")}</span>`:`<span class="status-badge status-available">${t("forSale")}</span>`;
+  const imgs=(p.images||[]).map((src,i)=>`<div class="detail-img-wrap" data-index="${i}"><img src="${src}" alt="Photo ${i+1}" loading="lazy"/><button class="detail-img-remove" data-action="remove-img" data-index="${i}" type="button">✕</button></div>`).join("");
 
   $("detail-body").innerHTML=`
-    <div class="detail-status-row">${statusBadge}<span style="font-size:0.75rem;color:var(--text-light)">${landLabel}</span></div>
+    <div class="detail-status-row">${badge}<span style="font-size:0.75rem;color:var(--text-light)">${landLabel}</span></div>
     <h2 class="detail-title">${escHtml(p.name)}</h2>
     ${p.location?`<p class="detail-location">📍 ${escHtml(p.location)}</p>`:""}
     <div class="detail-grid">
-      <div class="detail-card"><div class="detail-card-label">Sale Price</div><div class="detail-card-value">${formatPrice(p.price)}</div></div>
-      <div class="detail-card"><div class="detail-card-label">Rent / mo</div><div class="detail-card-value" style="color:var(--rent-text)">${p.rentPrice?formatPrice(p.rentPrice):"—"}</div></div>
-      <div class="detail-card"><div class="detail-card-label">Area</div><div class="detail-card-value">${p.area?p.area+" m²":"—"}</div></div>
-      <div class="detail-card"><div class="detail-card-label">Land Type</div><div class="detail-card-value" style="font-size:1rem">${landLabel}</div></div>
+      <div class="detail-card"><div class="detail-card-label">${t("fieldSalePrice")}</div><div class="detail-card-value">${formatPrice(p.price)}</div></div>
+      <div class="detail-card"><div class="detail-card-label">${t("fieldRentMonth")}</div><div class="detail-card-value" style="color:var(--rent-text)">${p.rentPrice?formatPrice(p.rentPrice):"—"}</div></div>
+      <div class="detail-card"><div class="detail-card-label">${t("fieldArea")}</div><div class="detail-card-value">${p.area?p.area+" m²":"—"}</div></div>
+      <div class="detail-card"><div class="detail-card-label">${t("fieldLandType")}</div><div class="detail-card-value" style="font-size:1rem">${landLabel}</div></div>
     </div>
     <div class="detail-inline-edit">
-      <div class="detail-section-label">Quick Edit</div>
-      <div class="detail-field-row"><span class="detail-field-label">Name</span><input class="detail-field-input" id="de-name" value="${escHtml(p.name)}"/><button class="detail-field-save" data-action="save-field" data-field="name">Save</button></div>
-      <div class="detail-field-row"><span class="detail-field-label">Nearby</span><input class="detail-field-input" id="de-location" value="${escHtml(p.location||"")}"/><button class="detail-field-save" data-action="save-field" data-field="location">Save</button></div>
-      <div class="detail-field-row"><span class="detail-field-label">Sale Price</span><input class="detail-field-input" id="de-price" type="number" value="${p.price}"/><button class="detail-field-save" data-action="save-field" data-field="price">Save</button></div>
-      <div class="detail-field-row"><span class="detail-field-label">Rent/mo</span><input class="detail-field-input" id="de-rent" type="number" value="${p.rentPrice||0}"/><button class="detail-field-save" data-action="save-field" data-field="rentPrice">Save</button></div>
-      <div class="detail-field-row"><span class="detail-field-label">Area m²</span><input class="detail-field-input" id="de-area" type="number" value="${p.area}"/><button class="detail-field-save" data-action="save-field" data-field="area">Save</button></div>
+      <div class="detail-section-label">${t("quickEdit")}</div>
+      <div class="detail-field-row"><span class="detail-field-label">${t("colName")}</span><input class="detail-field-input" id="de-name" value="${escHtml(p.name)}"/><button class="detail-field-save" data-action="save-field" data-field="name">${t("save")}</button></div>
+      <div class="detail-field-row"><span class="detail-field-label">${t("colNearby")}</span><input class="detail-field-input" id="de-location" value="${escHtml(p.location||"")}"/><button class="detail-field-save" data-action="save-field" data-field="location">${t("save")}</button></div>
+      <div class="detail-field-row"><span class="detail-field-label">${t("colSalePrice")}</span><input class="detail-field-input" id="de-price" type="number" value="${p.price}"/><button class="detail-field-save" data-action="save-field" data-field="price">${t("save")}</button></div>
+      <div class="detail-field-row"><span class="detail-field-label">${t("colRent")}</span><input class="detail-field-input" id="de-rent" type="number" value="${p.rentPrice||0}"/><button class="detail-field-save" data-action="save-field" data-field="rentPrice">${t("save")}</button></div>
+      <div class="detail-field-row"><span class="detail-field-label">${t("colArea")}</span><input class="detail-field-input" id="de-area" type="number" value="${p.area}"/><button class="detail-field-save" data-action="save-field" data-field="area">${t("save")}</button></div>
     </div>
-    <div style="margin-bottom:24px">
-      <div class="detail-section-label">Notes & Description</div>
-      <textarea class="detail-notes-area" id="detail-notes" placeholder="Write any notes, conditions, info…">${escHtml(p.description||"")}</textarea>
-      <button class="detail-notes-save" id="detail-notes-save">Save Notes</button>
+    <div style="margin-bottom:22px">
+      <div class="detail-section-label">${t("notesSection")}</div>
+      <textarea class="detail-notes-area" id="detail-notes" placeholder="${t("fieldNotesPlaceholder")}">${escHtml(p.description||"")}</textarea>
+      <button class="detail-notes-save" id="detail-notes-save">${t("saveNotes")}</button>
     </div>
     <div>
-      <div class="detail-section-label">Photos (${(p.images||[]).length} / 5)</div>
+      <div class="detail-section-label">${t("photosLabel")} (${(p.images||[]).length} / 5)</div>
       <div class="detail-images-grid" id="detail-images-grid">${imgs}</div>
-      ${(p.images||[]).length<5?`<label class="detail-add-image-label"><span>+ Add Photos</span><input type="file" id="detail-img-input" accept="image/*" multiple style="display:none"/></label>`:""}
+      ${(p.images||[]).length<5?`<label class="detail-add-image-label"><span>${t("addPhotos")}</span><input type="file" id="detail-img-input" accept="image/*" multiple style="display:none"/></label>`:""}
     </div>
-    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
-      <button class="btn btn-ghost" id="detail-full-edit" style="width:100%">✏️ Full Edit Form</button>
+    <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" id="detail-full-edit" style="width:100%">${t("fullEditBtn")}</button>
     </div>`;
 
-  $("detail-notes-save").addEventListener("click", async()=>{
-    const p2=properties.find(p=>p.id===currentId); if(!p2) return;
-    p2.description=$("detail-notes").value;
-    await saveProperties(); showToast("📝 Notes saved");
+  $("detail-notes-save").addEventListener("click",async()=>{
+    const p2=properties.find(p=>p.id===currentId);if(!p2)return;
+    p2.description=$("detail-notes").value; await saveProperties(); showToast(t("toastNotesSaved"));
   });
-  $("detail-images-grid").addEventListener("click", e=>{
+  $("detail-images-grid").addEventListener("click",e=>{
     const rm=e.target.closest("[data-action='remove-img']");
     if(rm){removeDetailImage(parseInt(rm.dataset.index));return;}
     const wrap=e.target.closest(".detail-img-wrap");
     if(wrap){const p2=properties.find(p=>p.id===currentId);if(p2&&p2.images[parseInt(wrap.dataset.index)])openImageModal(p2.images[parseInt(wrap.dataset.index)]);}
   });
   const dii=$("detail-img-input");
-  if(dii){
-    dii.addEventListener("change", async e=>{
-      const p2=properties.find(p=>p.id===currentId); if(!p2) return;
-      p2.images=p2.images||[];
-      for(const file of Array.from(e.target.files).slice(0,5-p2.images.length)){
-        if(file.size>3*1024*1024){showToast("⚠️ File too large");continue;}
-        p2.images.push(await toBase64(file));
-      }
-      await saveProperties(); renderDetail(p2); showToast("📸 Photos added");
-    });
-  }
-  $("detail-body").addEventListener("click", async e=>{
-    const btn=e.target.closest("[data-action='save-field']"); if(!btn) return;
-    const field=btn.dataset.field;
-    const p2=properties.find(p=>p.id===currentId); if(!p2) return;
+  if(dii){dii.addEventListener("change",async e=>{
+    const p2=properties.find(p=>p.id===currentId);if(!p2)return;
+    p2.images=p2.images||[];
+    for(const f of Array.from(e.target.files).slice(0,5-p2.images.length)){if(f.size>3*1024*1024){showToast(t("toastFileLarge"));continue;}p2.images.push(await toBase64(f));}
+    await saveProperties(); renderDetail(p2); showToast(t("toastPhotoAdded"));
+  });}
+  $("detail-body").addEventListener("click",async e=>{
+    const btn=e.target.closest("[data-action='save-field']");if(!btn)return;
+    const field=btn.dataset.field, p2=properties.find(p=>p.id===currentId);if(!p2)return;
     const inputMap={name:"de-name",location:"de-location",price:"de-price",rentPrice:"de-rent",area:"de-area"};
     const val=$(inputMap[field])?.value;
-    if(field==="name"&&!val.trim()){showToast("⚠️ Name cannot be empty");return;}
-    if(["price","rentPrice","area"].includes(field)&&isNaN(parseFloat(val))){showToast("⚠️ Must be a number");return;}
+    if(field==="name"&&!val.trim()){showToast(t("errNotEmpty"));return;}
+    if(["price","rentPrice","area"].includes(field)&&isNaN(parseFloat(val))){showToast(t("errMustBeNumber"));return;}
     p2[field]=["price","rentPrice","area"].includes(field)?parseFloat(val):val.trim();
-    await saveProperties(); renderDetail(p2); showToast("✅ Saved");
+    await saveProperties(); renderDetail(p2); showToast(t("toastSaved"));
   });
   $("detail-full-edit").addEventListener("click",()=>{showPropertyView("view-home");setTimeout(()=>openEditModal(currentId),50);});
 }
-
 async function removeDetailImage(idx){
-  if(!confirm("Remove this photo?")) return;
-  const p=properties.find(p=>p.id===currentId); if(!p) return;
-  p.images.splice(idx,1); await saveProperties(); renderDetail(p); showToast("🗑 Photo removed");
+  if(!confirm(t("confirmRemovePhoto")))return;
+  const p=properties.find(p=>p.id===currentId);if(!p)return;
+  p.images.splice(idx,1);await saveProperties();renderDetail(p);showToast(t("toastPhotoRemoved"));
 }
-$("detail-sold-btn").addEventListener("click", async()=>{
-  const p=properties.find(p=>p.id===currentId); if(!p) return;
+$("detail-sold-btn").addEventListener("click",async()=>{
+  const p=properties.find(p=>p.id===currentId);if(!p)return;
   await cycleStatus(p.id); renderDetail(properties.find(p=>p.id===currentId));
 });
-$("detail-print-btn").addEventListener("click", ()=>window.print());
+$("detail-print-btn").addEventListener("click",()=>window.print());
 $("back-btn").addEventListener("click",()=>{currentId=null;showPropertyView("view-home");});
 
-// ── GALLERY ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  GALLERY
+// ══════════════════════════════════════════════════════════
 $("btn-gallery-view").addEventListener("click",()=>{renderGallery();showPropertyView("view-gallery");});
 $("gallery-back-btn").addEventListener("click",()=>showPropertyView("view-home"));
-
 function renderGallery(){
   const list=properties.filter(p=>p.status==="available"||p.status==="rent");
   const grid=$("gallery-grid"); grid.innerHTML="";
-  if(list.length===0){grid.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted);grid-column:1/-1">No available properties to show.</div>`;return;}
+  if(!list.length){grid.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted);grid-column:1/-1">${t("emptyTitle")}</div>`;return;}
   const frag=document.createDocumentFragment();
   list.forEach(p=>{
-    const card=document.createElement("div"); card.className="gallery-card";
+    const card=document.createElement("div");card.className="gallery-card";
     const hasImg=p.images&&p.images.length>0;
-    const rentLabel=p.status==="rent"?`<div style="font-size:0.72rem;color:var(--rent-text);font-weight:600;margin-top:2px">For Rent · ${formatPrice(p.rentPrice)}/mo</div>`:"";
-    card.innerHTML=`
-      ${hasImg?`<img class="gallery-card-img" src="${p.images[0]}" alt="${escHtml(p.name)}" loading="lazy"/>`:`<div class="gallery-card-img">🏡</div>`}
+    card.innerHTML=`${hasImg?`<img class="gallery-card-img" src="${p.images[0]}" alt="${escHtml(p.name)}" loading="lazy"/>`:`<div class="gallery-card-img">🏡</div>`}
       <div class="gallery-card-info">
         <div class="gallery-card-name">${escHtml(p.name)}</div>
         <div class="gallery-card-price">${formatPrice(p.price)}</div>
-        ${rentLabel}
+        ${p.status==="rent"?`<div style="font-size:0.72rem;color:var(--rent-text);font-weight:600;margin-top:2px">${t("forRent")} · ${formatPrice(p.rentPrice)}/mo</div>`:""}
         <div class="gallery-card-area">${p.area?p.area+" m²":""} ${p.location?"· "+p.location:""}</div>
       </div>`;
     card.addEventListener("click",()=>{showPropertyView("view-home");setTimeout(()=>openDetail(p.id),50);});
@@ -551,23 +718,27 @@ function renderGallery(){
   grid.appendChild(frag);
 }
 
-// ── CSV EXPORT (Properties) ──────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  CSV EXPORT (Properties)
+// ══════════════════════════════════════════════════════════
 $("btn-export-csv").addEventListener("click",()=>{
-  if(!properties.length){showToast("Nothing to export");return;}
-  const rows=[["Name","Nearby","Sale Price","Rent/mo","Area m²","Land Type","Status","Notes"]];
+  if(!properties.length){showToast(t("toastNothingExport"));return;}
+  const rows=[[t("colName"),t("colNearby"),t("colSalePrice"),t("colRent"),t("colArea"),t("fieldLandType"),t("colStatus"),t("fieldNotes")]];
   properties.forEach(p=>rows.push([p.name,p.location||"",p.price,p.rentPrice||"",p.area,p.landType,p.status,(p.description||"").replace(/\n/g," ")]));
-  downloadCSV(rows,"my-properties.csv"); showToast("📊 CSV exported");
+  downloadCSV(rows,"my-properties.csv"); showToast(t("toastCsvExported"));
 });
 
-// ── IMAGE MODAL ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  IMAGE PREVIEW MODAL
+// ══════════════════════════════════════════════════════════
 function openImageModal(src){$("modal-image-src").src=src;$("image-modal").classList.remove("hidden");}
 $("close-image-modal").addEventListener("click",()=>$("image-modal").classList.add("hidden"));
 $("image-modal").addEventListener("click",e=>{if(e.target===$("image-modal")||e.target.classList.contains("image-modal-backdrop"))$("image-modal").classList.add("hidden");});
 
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 //  CLIENTS
-// ════════════════════════════════════════════════════════
-$("btn-add-client").addEventListener("click", openAddClientModal);
+// ══════════════════════════════════════════════════════════
+$("btn-add-client").addEventListener("click",openAddClientModal);
 
 function getFilteredClients(){
   let list=[...clients];
@@ -575,205 +746,128 @@ function getFilteredClients(){
   if(clientFilter!=="all") list=list.filter(c=>c.interest===clientFilter);
   return list;
 }
-
 function renderClients(){
   const list=getFilteredClients();
-  $("client-count").textContent=`${clients.length} client${clients.length!==1?"s":""}`;
-  const container=$("client-list");
-  const emptyEl=$("empty-clients");
-
-  // Remove existing cards
+  $("client-count").textContent=`${clients.length} ${t("navClients").toLowerCase()}`;
+  const container=$("client-list"),emptyEl=$("empty-clients");
   Array.from(container.querySelectorAll(".client-card")).forEach(el=>el.remove());
-
-  if(list.length===0){emptyEl.classList.remove("hidden");return;}
+  if(!list.length){emptyEl.classList.remove("hidden");return;}
   emptyEl.classList.add("hidden");
-
-  const interestLabel={buy:"Buying",sell:"Selling",rent:"Renting",multiple:"Multiple"};
-  const interestClass={buy:"interest-buy",sell:"interest-sell",rent:"interest-rent",multiple:"interest-multiple"};
-  const statusClass={active:"client-status-active",warm:"client-status-warm",closed:"client-status-closed",inactive:"client-status-inactive"};
-
+  const intLabel={buy:t("buying"),sell:t("selling"),rent:t("renting"),multiple:t("multiple")};
+  const intClass={buy:"interest-buy",sell:"interest-sell",rent:"interest-rent",multiple:"interest-multiple"};
+  const stClass={active:"client-status-active",warm:"client-status-warm",closed:"client-status-closed",inactive:"client-status-inactive"};
   const frag=document.createDocumentFragment();
   list.forEach(c=>{
-    const card=document.createElement("div"); card.className="client-card"; card.dataset.id=c.id;
-    const budget=c.budget?` · Budget: ${(CURRENCY_SYMBOLS[currency]||"")+parseFloat(c.budget).toLocaleString("en-US")}`:"";
+    const card=document.createElement("div");card.className="client-card";card.dataset.id=c.id;
+    const budget=c.budget?` · ${(CURRENCY_SYMBOLS[currency]||"")+parseFloat(c.budget).toLocaleString("en-US")}`:"";
     const area=c.areaPref?` · ${escHtml(c.areaPref)}`:"";
     card.innerHTML=`
-      <div class="client-card-top">
-        <div class="client-name">${escHtml(c.name)}</div>
-        <span class="client-status-badge ${statusClass[c.status]||"client-status-inactive"}">${c.status||"active"}</span>
-      </div>
+      <div class="client-card-top"><div class="client-name">${escHtml(c.name)}</div><span class="client-status-badge ${stClass[c.status]||"client-status-inactive"}">${c.status||"active"}</span></div>
       <div class="client-meta">
-        <span class="client-interest-tag ${interestClass[c.interest]||""}">${interestLabel[c.interest]||c.interest}</span>
+        <span class="client-interest-tag ${intClass[c.interest]||""}">${intLabel[c.interest]||c.interest}</span>
         ${c.phone?`<span class="client-meta-tag">📞 ${escHtml(c.phone)}</span>`:""}
         ${c.email?`<span class="client-meta-tag">✉️ ${escHtml(c.email)}</span>`:""}
-        ${budget||area?`<span class="client-meta-tag">${budget||""}${area||""}</span>`:""}
+        ${budget||area?`<span class="client-meta-tag">${budget}${area}</span>`:""}
       </div>
       ${c.notes?`<div class="client-notes-preview">${escHtml(c.notes.slice(0,120))}${c.notes.length>120?"…":""}</div>`:""}
       <div class="client-actions">
-        <button class="client-action-btn" data-action="edit-client" data-id="${c.id}">✏️ Edit</button>
-        <button class="client-action-btn danger" data-action="delete-client" data-id="${c.id}">🗑 Delete</button>
+        <button class="client-action-btn" data-action="edit-client"   data-id="${c.id}">✏️ ${t("colActions")}</button>
+        <button class="client-action-btn danger" data-action="delete-client" data-id="${c.id}">🗑</button>
       </div>`;
     frag.appendChild(card);
   });
   container.appendChild(frag);
 }
-
-$("client-list").addEventListener("click", e=>{
-  const btn=e.target.closest("[data-action]"); if(!btn) return;
+$("client-list").addEventListener("click",e=>{
+  const btn=e.target.closest("[data-action]");if(!btn)return;
   const {action,id}=btn.dataset;
   if(action==="edit-client")   openEditClientModal(id);
   if(action==="delete-client") deleteClient(id);
 });
-
-$("client-search").addEventListener("input",()=>{
-  clientSearch=$("client-search").value.trim();
-  $("client-search-clear").classList.toggle("hidden",!clientSearch);
-  renderClients();
-});
-$("client-search-clear").addEventListener("click",()=>{
-  $("client-search").value=""; clientSearch="";
-  $("client-search-clear").classList.add("hidden"); renderClients();
-});
+$("client-search").addEventListener("input",()=>{ clientSearch=$("client-search").value.trim(); $("client-search-clear").classList.toggle("hidden",!clientSearch); renderClients(); });
+$("client-search-clear").addEventListener("click",()=>{ $("client-search").value="";clientSearch="";$("client-search-clear").classList.add("hidden");renderClients(); });
 $("client-filter").addEventListener("change",()=>{ clientFilter=$("client-filter").value; renderClients(); });
 
 function openAddClientModal(){
-  $("client-form-id").value=""; $("client-name").value=""; $("client-phone").value="";
-  $("client-email").value=""; $("client-interest").value="buy"; $("client-budget").value="";
-  $("client-area-pref").value=""; $("client-notes").value=""; $("client-status").value="active";
+  $("client-form-id").value="";$("client-name").value="";$("client-phone").value="";
+  $("client-email").value="";$("client-interest").value="buy";$("client-budget").value="";
+  $("client-area-pref").value="";$("client-notes").value="";$("client-status").value="active";
   $("client-form-error").classList.remove("visible");
-  $("client-modal-title").textContent="Add Client";
+  $("client-modal-title").textContent=t("addClient");
   $("client-modal-overlay").classList.remove("hidden");
   setTimeout(()=>$("client-name").focus(),100);
 }
 function openEditClientModal(id){
-  const c=clients.find(c=>c.id===id); if(!c) return;
-  $("client-form-id").value=c.id; $("client-name").value=c.name; $("client-phone").value=c.phone||"";
-  $("client-email").value=c.email||""; $("client-interest").value=c.interest||"buy";
-  $("client-budget").value=c.budget||""; $("client-area-pref").value=c.areaPref||"";
-  $("client-notes").value=c.notes||""; $("client-status").value=c.status||"active";
+  const c=clients.find(c=>c.id===id);if(!c)return;
+  $("client-form-id").value=c.id;$("client-name").value=c.name;$("client-phone").value=c.phone||"";
+  $("client-email").value=c.email||"";$("client-interest").value=c.interest||"buy";
+  $("client-budget").value=c.budget||"";$("client-area-pref").value=c.areaPref||"";
+  $("client-notes").value=c.notes||"";$("client-status").value=c.status||"active";
   $("client-form-error").classList.remove("visible");
-  $("client-modal-title").textContent="Edit Client";
+  $("client-modal-title").textContent=escHtml(c.name);
   $("client-modal-overlay").classList.remove("hidden");
   setTimeout(()=>$("client-name").focus(),100);
 }
-function closeClientModal(){ $("client-modal-overlay").classList.add("hidden"); }
-$("client-modal-close").addEventListener("click", closeClientModal);
-$("client-form-cancel").addEventListener("click", closeClientModal);
-$("client-modal-overlay").addEventListener("click", e=>{ if(e.target===$("client-modal-overlay")) closeClientModal(); });
+function closeClientModal(){$("client-modal-overlay").classList.add("hidden");}
+$("client-modal-close").addEventListener("click",closeClientModal);
+$("client-form-cancel").addEventListener("click",closeClientModal);
+$("client-modal-overlay").addEventListener("click",e=>{if(e.target===$("client-modal-overlay"))closeClientModal();});
 
-$("client-form").addEventListener("submit", async e=>{
+$("client-form").addEventListener("submit",async e=>{
   e.preventDefault();
   const name=($("client-name").value||"").trim();
-  if(!name){showErr("client-form-error","Client name is required.");return;}
+  if(!name){showErr("client-form-error",t("errClientName"));return;}
   const id=$("client-form-id").value||uid();
-  const client={
-    id, name,
-    phone:($("client-phone").value||"").trim(),
-    email:($("client-email").value||"").trim(),
-    interest:$("client-interest").value,
-    budget:parseFloat($("client-budget").value)||0,
-    areaPref:($("client-area-pref").value||"").trim(),
-    notes:($("client-notes").value||"").trim(),
-    status:$("client-status").value,
-    updatedAt:Date.now()
-  };
+  const client={id,name,phone:($("client-phone").value||"").trim(),email:($("client-email").value||"").trim(),interest:$("client-interest").value,budget:parseFloat($("client-budget").value)||0,areaPref:($("client-area-pref").value||"").trim(),notes:($("client-notes").value||"").trim(),status:$("client-status").value,updatedAt:Date.now()};
   const idx=clients.findIndex(c=>c.id===id);
   if(idx>=0){client.createdAt=clients[idx].createdAt;clients[idx]=client;}
   else{client.createdAt=Date.now();clients.push(client);}
-  await saveClients();
-  closeClientModal();
-  showToast(idx>=0?"✅ Client updated":"✅ Client added");
+  await saveClients(); closeClientModal();
+  showToast(idx>=0?t("toastClientUpdated"):t("toastClientAdded"));
 });
-
 async function deleteClient(id){
-  const c=clients.find(c=>c.id===id); if(!c) return;
-  if(!confirm(`Delete client "${c.name}"?\nThis cannot be undone.`)) return;
-  clients=clients.filter(c=>c.id!==id);
-  await saveClients(); showToast("🗑 Client deleted");
+  const c=clients.find(c=>c.id===id);if(!c)return;
+  if(!confirm(t("confirmDeleteClient")))return;
+  clients=clients.filter(c=>c.id!==id);await saveClients();showToast(t("toastClientDeleted"));
 }
-
-// Export clients CSV
 $("btn-export-clients-csv").addEventListener("click",()=>{
-  if(!clients.length){showToast("No clients to export");return;}
-  const rows=[["Name","Phone","Email","Interest","Budget","Preferred Area","Status","Notes"]];
+  if(!clients.length){showToast(t("toastNothingExport"));return;}
+  const rows=[[t("clientFullName"),"Phone","Email",t("clientInterestedIn"),t("clientBudget"),t("clientPrefArea"),t("clientStatus"),t("fieldNotes")]];
   clients.forEach(c=>rows.push([c.name,c.phone||"",c.email||"",c.interest,c.budget||"",c.areaPref||"",c.status,(c.notes||"").replace(/\n/g," ")]));
-  downloadCSV(rows,"my-clients.csv"); showToast("📊 Clients exported");
+  downloadCSV(rows,"my-clients.csv");showToast(t("toastCsvExported"));
 });
 
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 //  DASHBOARD
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function renderDashboard(){
-  const totalProps  = properties.length;
-  const forSale     = properties.filter(p=>p.status==="available").length;
-  const forRent     = properties.filter(p=>p.status==="rent").length;
-  const sold        = properties.filter(p=>p.status==="sold").length;
-  const totalClients= clients.length;
-  const activeClients=clients.filter(c=>c.status==="active").length;
-  const buyingClients=clients.filter(c=>c.interest==="buy").length;
-  const rentingClients=clients.filter(c=>c.interest==="rent").length;
-
-  const recentProps=[...properties].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,5);
-  const recentClients=[...clients].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,5);
-
+  const totalProps=properties.length,forSaleN=properties.filter(p=>p.status==="available").length,forRentN=properties.filter(p=>p.status==="rent").length,soldN=properties.filter(p=>p.status==="sold").length;
+  const totalCl=clients.length,activeCl=clients.filter(c=>c.status==="active").length,buyingCl=clients.filter(c=>c.interest==="buy").length,rentingCl=clients.filter(c=>c.interest==="rent").length;
+  const recentP=[...properties].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,5);
+  const recentC=[...clients].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,5);
   $("dashboard-body").innerHTML=`
-    <div>
-      <div class="dash-section-title">Properties</div>
-      <div class="dash-grid">
-        <div class="dash-card accent"><div class="dash-card-value">${totalProps}</div><div class="dash-card-label">Total Properties</div></div>
-        <div class="dash-card green"><div class="dash-card-value">${forSale}</div><div class="dash-card-label">For Sale</div></div>
-        <div class="dash-card blue"><div class="dash-card-value">${forRent}</div><div class="dash-card-label">For Rent</div></div>
-        <div class="dash-card red"><div class="dash-card-value">${sold}</div><div class="dash-card-label">Sold</div></div>
-      </div>
-    </div>
-    <div>
-      <div class="dash-section-title">Clients</div>
-      <div class="dash-grid">
-        <div class="dash-card accent"><div class="dash-card-value">${totalClients}</div><div class="dash-card-label">Total Clients</div></div>
-        <div class="dash-card green"><div class="dash-card-value">${activeClients}</div><div class="dash-card-label">Active Now</div></div>
-        <div class="dash-card blue"><div class="dash-card-value">${buyingClients}</div><div class="dash-card-label">Want to Buy</div></div>
-        <div class="dash-card blue"><div class="dash-card-value">${rentingClients}</div><div class="dash-card-label">Want to Rent</div></div>
-      </div>
-    </div>
-    ${recentProps.length?`
-    <div>
-      <div class="dash-section-title">Recent Properties</div>
-      <div class="dash-recent">
-        ${recentProps.map(p=>`
-          <div class="dash-recent-item">
-            <span class="dash-recent-name">${escHtml(p.name)}</span>
-            <span class="dash-recent-price">${formatPrice(p.price)}</span>
-          </div>`).join("")}
-      </div>
-    </div>`:""}
-    ${recentClients.length?`
-    <div>
-      <div class="dash-section-title">Recent Clients</div>
-      <div class="dash-recent">
-        ${recentClients.map(c=>`
-          <div class="dash-recent-item">
-            <span class="dash-recent-name">${escHtml(c.name)}</span>
-            <span class="dash-recent-price" style="color:var(--text-muted)">${c.interest}</span>
-          </div>`).join("")}
-      </div>
-    </div>`:""}
-  `;
+    <div><div class="dash-section-title">${t("dashProps")}</div><div class="dash-grid">
+      <div class="dash-card accent"><div class="dash-card-value">${totalProps}</div><div class="dash-card-label">${t("dashProps")}</div></div>
+      <div class="dash-card green"><div class="dash-card-value">${forSaleN}</div><div class="dash-card-label">${t("dashForSale")}</div></div>
+      <div class="dash-card blue"><div class="dash-card-value">${forRentN}</div><div class="dash-card-label">${t("dashForRent")}</div></div>
+      <div class="dash-card red"><div class="dash-card-value">${soldN}</div><div class="dash-card-label">${t("dashSold")}</div></div>
+    </div></div>
+    <div><div class="dash-section-title">${t("dashClients")}</div><div class="dash-grid">
+      <div class="dash-card accent"><div class="dash-card-value">${totalCl}</div><div class="dash-card-label">${t("dashClients")}</div></div>
+      <div class="dash-card green"><div class="dash-card-value">${activeCl}</div><div class="dash-card-label">${t("dashActive")}</div></div>
+      <div class="dash-card blue"><div class="dash-card-value">${buyingCl}</div><div class="dash-card-label">${t("dashWantBuy")}</div></div>
+      <div class="dash-card blue"><div class="dash-card-value">${rentingCl}</div><div class="dash-card-label">${t("dashWantRent")}</div></div>
+    </div></div>
+    ${recentP.length?`<div><div class="dash-section-title">${t("dashRecentProps")}</div><div class="dash-recent">${recentP.map(p=>`<div class="dash-recent-item"><span class="dash-recent-name">${escHtml(p.name)}</span><span class="dash-recent-price">${formatPrice(p.price)}</span></div>`).join("")}</div></div>`:""}
+    ${recentC.length?`<div><div class="dash-section-title">${t("dashRecentClients")}</div><div class="dash-recent">${recentC.map(c=>`<div class="dash-recent-item"><span class="dash-recent-name">${escHtml(c.name)}</span><span class="dash-recent-price" style="color:var(--text-muted)">${c.interest}</span></div>`).join("")}</div></div>`:""}`;
 }
 
-// ── SHARED HELPERS ───────────────────────────────────────
-function showErr(id, msg){ $(id).textContent=msg; $(id).classList.add("visible"); }
-
-function downloadCSV(rows, filename){
-  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a"); a.href=url; a.download=filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── INIT ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", ()=>{
   initLock();
+  initLangSwitcher();
   initTabs();
   initFirebase();
   showPropertyView("view-home");
