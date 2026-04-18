@@ -17,13 +17,13 @@
 //  STEP 7: Save this file and re-upload to GitHub
 // ══════════════════════════════════════════════════════════
 const FIREBASE_CONFIG = {
-  apiKey:            "REPLACE_WITH_YOUR_apiKey",
-  authDomain:        "REPLACE_WITH_YOUR_authDomain",
-  databaseURL:       "REPLACE_WITH_YOUR_databaseURL",
-  projectId:         "REPLACE_WITH_YOUR_projectId",
-  storageBucket:     "REPLACE_WITH_YOUR_storageBucket",
-  messagingSenderId: "REPLACE_WITH_YOUR_messagingSenderId",
-  appId:             "REPLACE_WITH_YOUR_appId"
+  apiKey:            "AIzaSyCaQrIeyL1JkPilBKjH2uMS0OdToVjWn0w",
+  authDomain:        "my-properties-23288.firebaseapp.com",
+  databaseURL:       "https://my-properties-23288-default-rtdb.firebaseio.com",
+  projectId:         "my-properties-23288",
+  storageBucket:     "my-properties-23288.firebasestorage.app",
+  messagingSenderId: "768320523144",
+  appId:             "1:768320523144:web:6a31a7f333ccdb9306883d"
 };
 // Automatically detects if Firebase has been configured
 const FIREBASE_READY = !FIREBASE_CONFIG.apiKey.startsWith("REPLACE");
